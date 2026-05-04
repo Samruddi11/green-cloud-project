@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Green Cloud Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: #f4f8f5;
+        }
+
+        h2 {
+            color: green;
+        }
+
+        .score-box {
+            font-size: 22px;
+            margin: 10px;
+            padding: 10px;
+            background: #dff5e1;
+            display: inline-block;
+            border-radius: 10px;
+        }
+
+        .suggestions {
+            margin-top: 20px;
+            padding: 10px;
+            background: #fff3cd;
+            display: inline-block;
+            border-radius: 10px;
+            width: 60%;
+            text-align: left;
+        }
+
+        canvas {
+            margin: 20px;
+        }
+
+        #statusText {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>🌱 Green Cloud Monitoring Dashboard</h2>
+
+<!-- 🌱 Green Score -->
+<div class="score-box">
+    🌱 Green Score: <span id="score">0</span>
+</div>
+
+<!-- 📊 Progress Bar -->
+<div style="margin-top:10px; width:60%; display:inline-block;">
+    <div style="background:#ddd; border-radius:10px;">
+        <div id="scoreBar" style="height:20px; width:0%; background:green; border-radius:10px;"></div>
+    </div>
+</div>
+
+<div id="statusText"></div>
+
+<!-- ⚡ Suggestions -->
+<div class="suggestions">
+    <h3>⚡ Optimization Suggestions</h3>
+    <ul id="suggestionList"></ul>
+</div>
+
+<!-- 📊 Charts -->
+<canvas id="cpuChart"></canvas>
+<canvas id="ramChart"></canvas>
+<canvas id="diskChart"></canvas>
+
+<script>
+const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+const ramCtx = document.getElementById('ramChart').getContext('2d');
+const diskCtx = document.getElementById('diskChart').getContext('2d');
+
+const cpuData = {
+    labels: [],
+    datasets: [{ label: 'CPU Usage', data: [], borderColor: 'red', fill: false }]
+};
+
+const ramData = {
+    labels: [],
+    datasets: [{ label: 'RAM Usage', data: [], borderColor: 'blue', fill: false }]
+};
+
+const diskData = {
+    labels: [],
+    datasets: [{ label: 'Disk Usage', data: [], borderColor: 'green', fill: false }]
+};
+
+const cpuChart = new Chart(cpuCtx, { type: 'line', data: cpuData });
+const ramChart = new Chart(ramCtx, { type: 'line', data: ramData });
+const diskChart = new Chart(diskCtx, { type: 'line', data: diskData });
+
+async function fetchData() {
+    const res = await fetch('http://127.0.0.1:5000/api/data');
+    const data = await res.json();
+
+    const time = new Date().toLocaleTimeString();
+
+    // 📊 Update Charts
+    cpuData.labels.push(time);
+    cpuData.datasets[0].data.push(data.cpu_usage);
+
+    ramData.labels.push(time);
+    ramData.datasets[0].data.push(data.ram_usage);
+
+    diskData.labels.push(time);
+    diskData.datasets[0].data.push(data.disk_usage);
+
+    cpuChart.update();
+    ramChart.update();
+    diskChart.update();
+
+    // 🌱 Green Score
+    document.getElementById("score").innerText = data.green_score;
+
+    // 📊 Progress Bar
+    const bar = document.getElementById("scoreBar");
+    bar.style.width = data.green_score + "%";
+
+    // 🎯 Status Logic
+    const status = document.getElementById("statusText");
+
+    if (data.green_score > 70) {
+        bar.style.background = "green";
+        status.innerText = "🟢 Efficient System";
+    } 
+    else if (data.green_score > 40) {
+        bar.style.background = "orange";
+        status.innerText = "🟡 Moderate Efficiency";
+    } 
+    else {
+        bar.style.background = "red";
+        status.innerText = "🔴 Poor Efficiency - Optimize System";
+    }
+
+    // ⚡ Suggestions
+    const list = document.getElementById("suggestionList");
+    list.innerHTML = "";
+
+    data.suggestions.forEach(item => {
+        const li = document.createElement("li");
+        li.innerText = item;
+        list.appendChild(li);
+    });
+}
+
+setInterval(fetchData, 2000);
+</script>
+
+</body>
+</html>
